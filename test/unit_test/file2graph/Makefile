@@ -1,7 +1,8 @@
 CC = g++
 
+LIBDIR = /home/sylab/PunchShadow/ParMBE/src
+TBBLIBDIR = /usr/include/tbb/
 LIB = -I../../../src -I/usr/include/tbb/
-
 
 CFLAGS = -Wall -Werror
 CFLAGS += $(LIB)
@@ -18,3 +19,4 @@ file2graph.o: file2graph.cpp
 
 clean:
 	rm -f $(TARGET) *.o
+	rm -f $(LIBDIR)/*.o

@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     
     cout << "file path is: " << file_path << endl;
 
-    BiGraph<int, int, int> BPG;
+    BiGraph BPG;
     
     BPG.read(file_path, 2, 0);
 
