@@ -322,6 +322,24 @@ tbb::concurrent_unordered_set<int> *BiGraph::FindRNeighbor(int node)
     }
 }
 
+/* Find the degree of given node and the position of this node (L_set or R_set). */
+int BiGraph::getDegree(int node, bool nodeIsLeft)
+{
+    int degree;
+    tbb::concurrent_unordered_set<int> *n_list;
+    if (nodeIsLeft) {
+        /* Find the node in L_neighbor_list */
+        n_list = this->L_neighbor_list.find(node)->second;
+        degree = n_list->size();
+    } else {
+        n_list = this->R_neighbor_list.find(node)->second;
+        degree = n_list->size();
+    }
+    return degree;
+}
+
+
+
 
 void BiGraph::InsertToFinal(VertexSet *B)
 {

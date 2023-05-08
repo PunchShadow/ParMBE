@@ -70,6 +70,10 @@ public:
     VertexSet *GetNeighbor(int node, bool nodeIsLeft);
     VertexSet *GetNeighborSet(VertexSet *set, bool setIsLeft);
 
+    /* Calculate degree */
+    int getDegree(int node, bool nodeIsLeft);
+
+
     /* Return 1 if the node is in L_set; 0 in R_set */
     int VertexIsLeft(int node);
     int SetIsLeft(VertexSet *set);

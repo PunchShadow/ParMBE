@@ -8,6 +8,7 @@
 #include "BiGraph.hpp"
 #include "LocalState.hpp"
 #include "VertexSet.hpp"
+#include <sys/time.h>
 
 #ifdef DEBUG
 #include <assert.h>
@@ -291,7 +292,16 @@ minelmbc_main(string file_path)
     // }
     // cout << endl;
 
+    /* Calculate execution time of minelmbc_thread() */
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+
     minelmbc_thread(BPG, &X, ls.getTau(), ls.getTail(), ms);
+
+    gettimeofday(&end, NULL);
+    double time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1.0E-6;
+    cout << "Execution time: " << time << " sec" << endl;
+
 
     BPG->PrintFinalB();
     
