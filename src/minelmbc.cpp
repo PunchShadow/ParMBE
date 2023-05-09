@@ -18,6 +18,7 @@
 using namespace std;
 
 static bool tailIsLeft = false;
+static double num_mbe = 0;
 
 void 
 minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int ms) {
@@ -195,11 +196,12 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
                         *newMBE = *(ls.getY());
                         *newMBE += *(ls.getXVNeighbor());
                         ls.getBiGraph()->InsertToFinal(newMBE);
+                        num_mbe++;
                     }
-#ifdef DEBUG   
-                    cout << "newMBE:" << endl;
+#ifdef STATUS   
+                    cout << "newMBE: " << num_mbe << endl;
                     newMBE->PrintStatus();
-#endif /* DEBUG */
+#endif /* STATUS */
                     
                 }
 

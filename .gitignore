@@ -1,3 +1,10 @@
 *.gz
 *.o
 input/*
+^(.*?(\bperf\b)[^$]*)$
+*.perf
+*.data
+*.folder
+*.svg
+*.old
+p1

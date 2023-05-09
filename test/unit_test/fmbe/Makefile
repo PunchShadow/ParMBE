@@ -1,3 +1,6 @@
+# Makefile to test FMBE.hpp
+
+
 CC = g++
 
 LIBDIR = /home/sylab/PunchShadow/ParMBE/include
@@ -10,32 +13,22 @@ CFLAGS = -Wall -Werror
 CFLAGS += $(LIB)
 CFLAGS += -ltbb
 CFLAGS += -g
-CFLAGS += -O0
-# CFLAGS += -O3
-
-#############################################
-CFLAGS += -DNDEBUG
-CFLAGS += -DNSTATUS
-#############################################
-
+CFLAGS += -DDEBUG
 
 SRC = $(wildcard $(SRCDIR)/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 
 
-TARGET = minelmbc_main
+TARGET = fmbe_test
 
-$(TARGET): $(OBJ) minelmbc_test.o
+$(TARGET): $(OBJ) fmbe_test.o
 	$(CC) $(CFLAGS) -o $@ $^ -ltbb
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-minelmbc_test.o: minelmbc_test.cpp
-	$(CC) $(CFLAGS) -c minelmbc_test.cpp
-
-# minelmbc.o: $(LIBDIR)/minelmbc.cpp
-# 	$(CC) -c $(LIBDIR)/minelmbc.cpp -ltbb
+fmbe_test.o: fmbe_test.cpp
+	$(CC) $(CFLAGS) -c fmbe_test.cpp
 
 clean:
 	rm -f $(TARGET) *.o

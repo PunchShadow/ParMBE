@@ -1,8 +1,10 @@
 #ifndef _FBME_H_
 #define _FBME_H_
 
+#include <iostream>
+#include <string>
 
-void fmbe_main(std::string file_path)
+void fmbe_main(std::string file_path);
 
 
 
