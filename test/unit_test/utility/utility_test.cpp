@@ -139,6 +139,41 @@ int main()
     cout << "}" << endl;
 
     
+    /* Test TBB_CUS_COPY() */
+    cout << "------------ << Test TBB_CUS_COPY() >> --------------" << endl;
+    /* Reuse src1 and src2 */
+    src1->clear();
+    src2->clear();
+
+    /* Insert {1,2,3} to src1 */
+    src1->insert(1);
+    src1->insert(2);
+    src1->insert(3);
+
+    TBB_CUS_COPY(src2, src1);
+
+    /* Print src1 */
+    cout << "Expect: src2 = src1 => {1,2,3} = {1,2,3}" << endl;
+    cout << "Real: src2 = {";
+    for (auto it = src2->begin(); it != src2->end(); it++) {
+        cout << *it << ",";
+    }
+    cout << "}" << endl;
+
+    /* Test if src2 is NULL */
+    cout << "------------ << Test TBB_CUS_COPY() with NULL >> --------------" << endl;
+
+    tbb::concurrent_unordered_set<int> *src7 = new tbb::concurrent_unordered_set<int>();
+    TBB_CUS_COPY(src7, src1);
+    cout << "sr7: " << src7 << endl;
+    /* Print src1 */
+    cout << "Expect: src7 = src1 => {1,2,3} = {1,2,3}" << endl;
+    cout << "Real: src7 = {";
+    for (auto it = src7->begin(); it != src7->end(); it++) {
+        cout << *it << ",";
+    }
+    cout << "}" << endl;
+
 
 
 

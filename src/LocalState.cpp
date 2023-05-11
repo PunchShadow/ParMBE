@@ -5,12 +5,14 @@
 #include "VertexSet.hpp"
 #include "utility.hpp"
 
+/* TODO: Reduce deep copy of X, tau and tail in LocalState. */
 LocalState::
 LocalState(VertexSet *vs, VertexSet *t_x, VertexSet *tail, int ms)
 {
-    this->X.copy(vs);
-    this->tau.copy(t_x);
-    this->tail.copy(tail);
+
+    this->X.deep_copy(vs);
+    this->tau.deep_copy(t_x);
+    this->tail.deep_copy(tail);
     this->ms = ms;
 }
 
@@ -26,11 +28,12 @@ void
 LocalState::CalculateNeighbor(int v, bool nodeIsLeft)
 {
     this->XV_neighbor.clear();
-    VertexSet v_neighbor = *(this->bigraph->GetNeighbor(v, nodeIsLeft));
+    
+    VertexSet* v_neighbor = this->bigraph->GetNeighbor(v, nodeIsLeft);
 
     /* If the X set is empty, v_neighbor is the neighbor list */
     if (this->X.IsEmpty()) {
-        this->XV_neighbor = v_neighbor;
+        this->XV_neighbor.deep_copy(v_neighbor);
         return;
     }
 
@@ -40,8 +43,8 @@ LocalState::CalculateNeighbor(int v, bool nodeIsLeft)
         /* X's common neighbor is null */
         return;
     }
-    this->XV_neighbor = *x_neighbor;
-    this->XV_neighbor *= v_neighbor;
+    this->XV_neighbor.deep_copy(x_neighbor);
+    this->XV_neighbor *= *v_neighbor;
 
     // if (x_neighbor == NULL) return;
     // else {

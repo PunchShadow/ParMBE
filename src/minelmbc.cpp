@@ -28,12 +28,14 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
     ls.setBiGraph(BPG);
     ls.setMs(ms);
     ls.setTau(tau);
-    ls.setTail(tail);
+    ls.setTail(tail); // FIXME: Tail has some wrong, there are no vertex in tail.
 
     VertexSet *new_tail = new VertexSet();
+    VertexSet *temp_tau = new VertexSet();
+    temp_tau->deep_copy(ls.getTau()); /* temp_vertexset = Tau(X) */
 
     VertexSet *temp_tail = ls.getTail();
-
+    VertexSet *v_neighbor;
 #ifdef DEBUG
     /* Check if the tail is one-side VertexSet. */
     CHECK_VERTEXSET_IS_ONE_SIDE(temp_tail);
@@ -41,46 +43,64 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
     temp_tail->PrintStatus();
 #endif /* DEBUG */
 
-    /* Iteratively access the elements in tail using for loop. */ 
-    // tbb::concurrent_unordered_set<int>::iterator it;
 
 
-    /* FIXME: Removing from tail has something wrong, the remove will access the element which is not in the L_set or R_set */
-    // cout << "Remove vertices from tail" << endl;
-    if (tailIsLeft) {
+    if (tailIsLeft == true && temp_tail->GetLset() > 0) {
         for (auto it = temp_tail->GetLset()->begin(); it != temp_tail->GetLset()->end(); it++) {
+            v_neighbor = ls.getBiGraph()->GetNeighbor(*it, tailIsLeft);
 #ifdef DEBUG
-            cout << *it << " ";
+            cout << *it << "-> " << "v_neighbor_size: " << v_neighbor->GetRset()->size() << " ";
 #endif /* DEBUG */
-            ls.CalculateNeighbor(*it, true);
-            if (ls.getXVNeighbor()->GetSize() >= ms) {
-#ifdef DEBUG
-                cout << "Insert (L) " << *it << " to new tail" << endl;
-                // ls.getTail()->unsafe_remove_L(*it);
-#endif /* DEBUG */
-                new_tail->insert_L(*it);        
-            }
-        }
-    } else {
-        for (auto it = temp_tail->GetRset()->begin(); it != temp_tail->GetRset()->end(); it++) {
-            ls.CalculateNeighbor(*it, false);
-            if (ls.getXVNeighbor()->GetSize() >= ms) {
-#ifdef DEBUG
-                cout << "Insert (R) " << *it << " to tail" << endl;
-#endif  /* DEBUG */
-                new_tail->insert_R(*it);
-                //ls.getTail()->unsafe_remove_R(*it);
             
+            for (auto it2 = v_neighbor->GetRset()->begin(); it2 != v_neighbor->GetRset()->end(); it2++) {
+                /* If we can find an intersected node of Tau(X) and Tau(v) -> |Tau(X) U Tau(v)| > 0 */
+                if (temp_tau->GetRset()->find(*it2) != temp_tau->GetRset()->end()) {      
+#ifdef DEBUG
+                    cout << "Insert (L) " << *it << " to new tail" << endl;
+#endif /* DEBUG */
+                    new_tail->insert_L(*it);
+                    break;
+                }
+            }
+#ifdef DEBUG
+            cout << endl;
+#endif  /* DEBUG */
+        }
+    } else if (tailIsLeft == false && temp_tail->GetRset() > 0) {
+        for (auto it = temp_tail->GetRset()->begin(); it != temp_tail->GetRset()->end(); it++) {
+            v_neighbor = ls.getBiGraph()->GetNeighbor(*it, tailIsLeft);
+            for (auto it2 = v_neighbor->GetLset()->begin(); it2 != v_neighbor->GetLset()->end(); it2++) {
+                /* If we can find an intersected node of Tau(X) and Tau(v) -> |Tau(X) U Tau(v)| > 0 */
+                if (temp_tau->GetLset()->find(*it2) != temp_tau->GetLset()->end()) {
+#ifdef DEBUG
+                    cout << "Insert (R) " << *it << " to tail" << endl;
+#endif  /* DEBUG */
+                    new_tail->insert_R(*it);
+                    break;
+                }
             }
         }
     }
 
+
     ls.setTail(new_tail);
-    
+
+#ifdef DEBUG
+    // VertexSet *test_tail = ls.getTail();
+    // cout << "test_tail: " << test_tail << endl;
+    // cout << "temp_tail:"  << temp_tail << endl;
+    // cout << "tess_tail: " << endl;
+    // test_tail->PrintStatus();
+#endif /* DEBUG */
 
 
     /* Check if |X| + |tail(X)| < ms: terminal condition */
-    if ((int)(ls.getTail()->GetSize() + ls.getX()->GetSize()) < ms) {
+    int X_size = ls.getX()->GetSize();
+    int tail_size = ls.getTail()->GetSize();
+    // cout << "X_size: " << X_size << endl;
+    // cout << "tail_size: " << tail_size << endl;
+    if ((int)(X_size + tail_size) < ms) {
+        
         return;
     }   
 
@@ -100,21 +120,26 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
         for (auto it = temp_tail->GetLset()->begin(); it != temp_tail->GetLset()->end(); it++) {
             tail_vector->push_back(*it);
         }
-    } else {
+    } else if (temp_tail->GetRsetSize() > 0) {
         for (auto it = temp_tail->GetRset()->begin(); it != temp_tail->GetRset()->end(); it++) {
             tail_vector->push_back(*it);
         }
     }
 
-    /* Sort the tail_vector */
-    std::sort(tail_vector->begin(), tail_vector->end(), [&](int a, int b) {
-        return ls.getBiGraph()->GetNeighbor(a, true)->GetSize() < ls.getBiGraph()->GetNeighbor(b, true)->GetSize();
-    });
+    if (temp_tail->GetSize() > 0) {
+        /* Sort the tail_vector */
+        std::sort(tail_vector->begin(), tail_vector->end(), [&](int a, int b) {
+            return ls.getBiGraph()->GetNeighbor(a, true)->GetSize() < ls.getBiGraph()->GetNeighbor(b, true)->GetSize();
+        });
 
-    /* Check unique */
-    auto itt = std::unique(tail_vector->begin(), tail_vector->end());
-    bool wasUnique = (itt == tail_vector->end());
-    if (!wasUnique) exit(0);
+        /* Check unique */
+        auto itt = std::unique(tail_vector->begin(), tail_vector->end());
+        bool wasUnique = (itt == tail_vector->end());
+        if (!wasUnique) exit(0);
+    }
+
+
+
 
     /* TBB parallel sort version */
     // tbb::parallel_sort(tail_vector->begin(), tail_vector->end(), [&](int a, int b) {
@@ -124,6 +149,7 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
     /* for x in tail_vector */
     for (int i = 0; i < (int)tail_vector->size(); i++) {
         /* FIXME: there are two same vertex appear at the same time */
+        
         int vertex = (int)(*tail_vector)[i];
         
         
@@ -132,20 +158,20 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
         else ls.getTail()->unsafe_remove_R(vertex);
 
 
-#ifdef DEBUG
-
-#endif /* DEBUG */
         /* XWVertex = X U {v} */
         VertexSet XWVertex;
-        XWVertex = *(ls.getX());
+        XWVertex.deep_copy(ls.getX()); // Deep copy
         if (tailIsLeft) XWVertex.insert_L(vertex);
         else XWVertex.insert_R(vertex);
+        // int test = (int)(XWVertex.GetSize() + ls.getTail()->GetSize());
+        // cout << "i: " << i << " -------> " << vertex << ", test: " << test << " vector_size: " << tail_vector->size() << " ---------------" <<endl;
+
 
         /* if |(X U {v})| + |tail(X)| >= ms */
-        if ((int)(XWVertex.GetSize() + ls.getTail()->GetSize()) > ms) {
+        if ((int)(XWVertex.GetSize() + ls.getTail()->GetSize()) >= ms) { // FIXME: > will cut the 
 
-            ls.CalculateNeighborNeighbor(vertex, tailIsLeft);
-#ifdef DEBUG
+            ls.CalculateNeighborNeighbor(vertex, tailIsLeft); // Only calculate neighbor neighbor one time
+            #ifdef DEBUG
             VertexSet *Y_ptr = ls.getXVNeighborNeighbor();
             assert(Y_ptr->GetLsetSize() == 0 || Y_ptr->GetRsetSize() == 0);
             CHECK_VERTEXSET_IS_ONE_SIDE(ls.getXVNeighborNeighbor());
@@ -160,18 +186,21 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
             ls.getXVNeighbor()->PrintStatus();
             cout << "ls.getXVNeighborNeighbor: " << endl;
             ls.getXVNeighborNeighbor()->PrintStatus();
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
-            ls.setY(ls.getXVNeighborNeighbor());
+            ls.setY(ls.getXVNeighborNeighbor()); // Deep copy
 
-#ifdef DEBUG
+            #ifdef DEBUG
             CHECK_VERTEXSET_IS_ONE_SIDE(ls.getY());
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
             /* XWVertex = X U {v} */            
-            /* ls.getY <- ls.getY \ (X U {v}) */
-            VertexSet temp_Y = *(ls.getY()) - (XWVertex);
-#ifdef DEBUG
+            /* temp_Y <- ls.getY \ (X U {v}) */
+            VertexSet temp_Y;
+            temp_Y.deep_copy(ls.getY()); // Deep copy
+            temp_Y -= XWVertex; // FIXME: use deep copy or =
+            
+            #ifdef DEBUG
             VertexSet *temp_y_ptr = &temp_Y;
             CHECK_VERTEXSET_IS_ONE_SIDE(temp_y_ptr);
             /* Print temp_Y */
@@ -179,13 +208,12 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
             ls.getY()->PrintStatus();
             cout << "temp_Y:" << endl;
             temp_Y.PrintStatus();
-#endif /* DEBUG */
+            #endif /* DEBUG */
 
             /* if Y \ (X U {v}) contains(<=) tail(X) */
             if (temp_Y <= *(ls.getTail())) {
 
                 if ((int)(ls.getY()->GetSize()) >= ms) {
-                    // cout << "MBE Found!" << endl;
                     /* Generating new biclique set and inserting to Bigraph. */
                     VertexSet *newMBE = new VertexSet();
                     if (ls.getY()->GetSize() > 0) {
@@ -193,15 +221,15 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
                         CHECK_VERTEXSET_IS_ONE_SIDE(ls.getY());
                         CHECK_VERTEXSET_IS_ONE_SIDE(ls.getXVNeighbor());
                         #endif /* DEBUG */
-                        *newMBE = *(ls.getY());
+                        newMBE->deep_copy(ls.getY()); /* Deep copy Y */
                         *newMBE += *(ls.getXVNeighbor());
                         ls.getBiGraph()->InsertToFinal(newMBE);
                         num_mbe++;
                     }
-#ifdef STATUS   
+                    #ifdef STATUS   
                     cout << "newMBE: " << num_mbe << endl;
                     newMBE->PrintStatus();
-#endif /* STATUS */
+                    #endif /* STATUS */
                     
                 }
 
@@ -211,13 +239,14 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
                 *newX = *(ls.getY());
 
 
-#ifdef DEBUG
+                #ifdef DEBUG
+                cout << "newX: " << endl;
+                newX->PrintStatus();
                 CHECK_VERTEXSET_IS_ONE_SIDE(newX);
                 CHECK_VERTEXSET_IS_ONE_SIDE(ls.getY());
                 CHECK_VERTEXSET_IS_ONE_SIDE((&newTail));
-                cout << "newX: " << endl;
-                newX->PrintStatus();
-#endif /* DEBUG */
+
+                #endif /* DEBUG */
 
                 /* Recursive call */
                 // cout << "Recursive call" << endl;
@@ -293,6 +322,11 @@ minelmbc_main(string file_path)
     //     cout << *it << " ";
     // }
     // cout << endl;
+
+#ifdef DEBUG
+    cout << "Initial Tail: " << endl;
+    ls.getTail()->PrintStatus();
+#endif /* DEBUG */
 
     /* Calculate execution time of minelmbc_thread() */
     struct timeval start, end;

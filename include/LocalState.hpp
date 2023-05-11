@@ -16,6 +16,7 @@
 using namespace std;
 
 
+/* TODO: Pointer of the VertexSet in LocalState */
 class LocalState 
 {
 private:
@@ -37,12 +38,12 @@ public:
     ~LocalState();
 
     /* Setter */
-    void setVertexSet(VertexSet *vs) {this->X = *vs;}
-    void setTail(VertexSet *in_tail) { this->tail = *in_tail;}
-    void setTau(VertexSet *in_tau) { this->tau = *in_tau; }
+    void setVertexSet(VertexSet *vs) {this->X.deep_copy(vs);}
+    void setTail(VertexSet *in_tail) { this->tail.deep_copy(in_tail);}
+    void setTau(VertexSet *in_tau) { this->tau.deep_copy(in_tau); }
     void setMs(int ms) {this->ms = ms;}
     void setBiGraph(BiGraph *g) { this->bigraph = g;}
-    void setY(VertexSet *y) {this->Y = *y;}
+    void setY(VertexSet *y) {this->Y.deep_copy(y);}
     
 
     /* Getter */

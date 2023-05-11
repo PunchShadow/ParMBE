@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     /* Test GetNeighbor() function */
     cout << "Test GetNeighbor() function" << endl;
     
-    VertexSet *result = new VertexSet();
+    VertexSet *result;
     result = BPG->GetNeighbor(1, true);
     cout << "Find 1's neighbor: " << endl;
     result->PrintStatus();
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     VS1->insert_R(5);
     VS1->insert_R(6);
 
-    result = BPG->GetNeighborSet(VS1);
+    result = BPG->GetNeighborSet(VS1, false);
     cout << "Find {5,6}'s common neighbor: " << endl;
     result->PrintStatus();
 
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     VS1->insert_R(6);
     VS1->insert_R(7);
 
-    result = BPG->GetNeighborSet(VS1);
+    result = BPG->GetNeighborSet(VS1, false);
     cout << "Find {6,7}'s common neighbor: " << endl;
     result->PrintStatus();
 
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
     VS1->insert_R(7);
     VS1->insert_R(8);
 
-    result = BPG->GetNeighborSet(VS1);
+    result = BPG->GetNeighborSet(VS1, false);
     cout << "Find {7,8}'s common neighbor: " << endl;
     result->PrintStatus();
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     VS1->insert_R(8);
     VS1->insert_R(9);
 
-    result = BPG->GetNeighborSet(VS1);
+    result = BPG->GetNeighborSet(VS1, false);
     cout << "Find {8,9}'s common neighbor: " << endl;
     result->PrintStatus();
 

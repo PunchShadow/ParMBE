@@ -9,9 +9,9 @@ LIB = -I$(LIBDIR) -I$(TBBLIBDIR)
 CFLAGS = -Wall -Werror
 CFLAGS += $(LIB)
 CFLAGS += -ltbb
-CFLAGS += -g
-CFLAGS += -O0
-# CFLAGS += -O3
+#CFLAGS += -g
+#CFLAGS += -O0
+CFLAGS += -O3
 
 #############################################
 CFLAGS += -DNDEBUG
