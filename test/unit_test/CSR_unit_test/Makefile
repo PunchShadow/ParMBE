@@ -14,8 +14,8 @@ CFLAGS += -ltbb
 CFLAGS += -O3
 
 #############################################
-CFLAGS += -DDEBUG
-CFLAGS += -DSTATUS
+CFLAGS += -DNDEBUG
+CFLAGS += -DNSTATUS
 #############################################
 
 
@@ -23,19 +23,19 @@ SRC = $(wildcard $(SRCDIR)/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 
 
-TARGET = minelmbc_main
+TARGET = csr_main
 
-$(TARGET): $(OBJ) minelmbc_test.o
+$(TARGET): $(OBJ) csr_test.o
 	$(CC) $(CFLAGS) -o $@ $^ -ltbb
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-minelmbc_test.o: minelmbc_test.cpp
-	$(CC) $(CFLAGS) -c minelmbc_test.cpp
+csr_test.o: csr_test.cpp
+	$(CC) $(CFLAGS) -c csr_test.cpp
 
-# minelmbc.o: $(LIBDIR)/minelmbc.cpp
-# 	$(CC) -c $(LIBDIR)/minelmbc.cpp -ltbb
+# csr.o: $(LIBDIR)/csr.cpp
+# 	$(CC) -c $(LIBDIR)/csr.cpp -ltbb
 
 clean:
 	rm -f $(TARGET) *.o

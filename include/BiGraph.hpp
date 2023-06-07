@@ -3,12 +3,14 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <set>
 #include <map>
 #include <tbb/tbb.h>
 #include <tbb/concurrent_hash_map.h>
 #include "VertexSet.hpp"
 #include "utility.hpp"
+#include "CSR.hpp"
 
 #ifdef DEBUG
 #include <assert.h>
@@ -16,8 +18,6 @@
 
 
 using namespace std;
-
-
 
 /* Storing the global information for read-only operations
 */
@@ -35,6 +35,9 @@ private:
     std::map<int, tbb::concurrent_unordered_set<int>*> R_neighbor_list; // R_set's neighbor list, which is the subset of L_set
     // tbb::concurrent_unordered_set<std::pair<int, int>> E_set; // Edge set, pair of L_set and R_set
     
+    /* CSR format */
+    CSR csr;
+
     /* Results */
     tbb::concurrent_unordered_set<VertexSet*> B_final;
     

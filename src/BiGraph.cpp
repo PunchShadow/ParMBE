@@ -226,7 +226,6 @@ int BiGraph::SetIsLeft(VertexSet *set)
     }
 }
 
-/* FIXME: Reduce the set copy on SetRset */
 /* Use link the read-only data to L_set and R_set of neighbor_set */
 /* If other functions want to use the return pointer, please use deep_copy() of VertexSet */
 VertexSet *BiGraph::GetNeighbor(int node, bool nodeIsLeft)
@@ -241,7 +240,6 @@ VertexSet *BiGraph::GetNeighbor(int node, bool nodeIsLeft)
     return neighbor_set;
 }
 
-/* FIXME: Unable to find the correct set and return */
 /* Find the "common neighbor" of the set 
    Return: the pointer of allocated Vertextset if there is common neighbor
            NULL if there is no common neighbor

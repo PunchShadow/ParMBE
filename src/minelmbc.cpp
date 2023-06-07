@@ -28,7 +28,7 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
     ls.setBiGraph(BPG);
     ls.setMs(ms);
     ls.setTau(tau);
-    ls.setTail(tail); // FIXME: Tail has some wrong, there are no vertex in tail.
+    ls.setTail(tail);
 
     VertexSet *new_tail = new VertexSet();
     VertexSet *temp_tau = new VertexSet();
@@ -148,7 +148,6 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
 
     /* for x in tail_vector */
     for (int i = 0; i < (int)tail_vector->size(); i++) {
-        /* FIXME: there are two same vertex appear at the same time */
         
         int vertex = (int)(*tail_vector)[i];
         
@@ -167,8 +166,8 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
         // cout << "i: " << i << " -------> " << vertex << ", test: " << test << " vector_size: " << tail_vector->size() << " ---------------" <<endl;
 
 
-        /* if |(X U {v})| + |tail(X)| >= ms */
-        if ((int)(XWVertex.GetSize() + ls.getTail()->GetSize()) >= ms) { // FIXME: > will cut the 
+        /* if |(X U {v})| + |tail(X)| >= ms, note > is wrong */
+        if ((int)(XWVertex.GetSize() + ls.getTail()->GetSize()) >= ms) {
 
             ls.CalculateNeighborNeighbor(vertex, tailIsLeft); // Only calculate neighbor neighbor one time
             #ifdef DEBUG
@@ -198,7 +197,7 @@ minelmbc_thread(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int
             /* temp_Y <- ls.getY \ (X U {v}) */
             VertexSet temp_Y;
             temp_Y.deep_copy(ls.getY()); // Deep copy
-            temp_Y -= XWVertex; // FIXME: use deep copy or =
+            temp_Y -= XWVertex;
             
             #ifdef DEBUG
             VertexSet *temp_y_ptr = &temp_Y;

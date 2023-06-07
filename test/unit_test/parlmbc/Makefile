@@ -9,9 +9,10 @@ LIB = -I$(LIBDIR) -I$(TBBLIBDIR)
 CFLAGS = -Wall -Werror
 CFLAGS += $(LIB)
 CFLAGS += -ltbb
-#CFLAGS += -g
-#CFLAGS += -O0
-CFLAGS += -O3
+CFLAGS += -g
+CFLAGS += -O0
+# CFLAGS += -fsanitize=thread -fPIE -pie -g -fno-omit-frame-pointer
+#CFLAGS += -O3
 
 #############################################
 CFLAGS += -DDEBUG
@@ -23,16 +24,16 @@ SRC = $(wildcard $(SRCDIR)/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 
 
-TARGET = minelmbc_main
+TARGET = parlmbc_main
 
-$(TARGET): $(OBJ) minelmbc_test.o
+$(TARGET): $(OBJ) parlmbc_test.o
 	$(CC) $(CFLAGS) -o $@ $^ -ltbb
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-minelmbc_test.o: minelmbc_test.cpp
-	$(CC) $(CFLAGS) -c minelmbc_test.cpp
+minelmbc_test.o: parlmbc_test.cpp
+	$(CC) $(CFLAGS) -c parlmbc_test.cpp
 
 # minelmbc.o: $(LIBDIR)/minelmbc.cpp
 # 	$(CC) -c $(LIBDIR)/minelmbc.cpp -ltbb
