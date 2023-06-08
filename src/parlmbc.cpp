@@ -21,15 +21,13 @@
 using namespace std;
 
 static bool tailIsLeft = false;
-static double num_mbe = 0;
-static int num_thread = 16; // = tbb::task_scheduler_init::default_num_threads();
+static int num_thread = tbb::task_scheduler_init::default_num_threads();
 
 /* Mutex locks */
 tbb::spin_mutex sort_tail_lock;
 tbb::spin_mutex insert_mbe_lock;
 tbb::spin_mutex insert_final_lock;
 
-/* FIXME: With thread number increases, the number of biclique is decreases.*/
 
 void
 remove_tail(BiGraph *BPG, VertexSet *X, VertexSet *new_tail, int node, int ms)
@@ -54,13 +52,11 @@ remove_tail(BiGraph *BPG, VertexSet *X, VertexSet *new_tail, int node, int ms)
 }
 
 void
-unroll_iterative_recursive(tbb::concurrent_vector<int> *vec, int start, int stride, LocalState* ls)
+unroll_iterative_recursive(tbb::concurrent_vector<int> *vec, int num_iter, LocalState* ls)
 {
     /* ntail(X) = tail(i+1,...,k); ntail = vec->at[start: start + stride] */
-    std::vector<int> ntail_vector;
     VertexSet *ntail_set = new  VertexSet();
-    for (int i = start; i < start + stride; i++) {
-        ntail_vector.push_back(vec->at(i));
+    for (int i = num_iter+1; i < (int)vec->size(); i++) {
         if (tailIsLeft) ntail_set->insert_L(vec->at(i));
         else ntail_set->insert_R(vec->at(i));
     }
@@ -76,152 +72,141 @@ unroll_iterative_recursive(tbb::concurrent_vector<int> *vec, int start, int stri
     VertexSet *XWVertex = new VertexSet();
     XWVertex->deep_copy(new_ls.getX());
     int XVNeighborSize;
-    
-    /* For each element in ntail */
-    for (auto it = ntail_vector.begin(); it != ntail_vector.end(); it++) {
         
-        int vertex = *it;
-        /* Maintain ntail_set */
-        if (tailIsLeft) ntail_set->unsafe_remove_L(vertex);
-        else ntail_set->unsafe_remove_R(vertex);
+    int vertex = vec->at(num_iter);
+
+    if (tailIsLeft) XWVertex->insert_L(vertex);
+    else XWVertex->insert_R(vertex);
+
+    /* if |(X U {v})| + |ntail(X)| >= ms */
+    if ((int)(XWVertex->GetSize() + ntail_set->GetSize()) >= ms) {
         
+        /* Parallel find the 2-hop common neighbor set */
+        /* Still need to get the common neighbor of {X U {v}} */
+        new_ls.CalculateNeighbor(vertex, tailIsLeft);
+        XVNeighbor = new_ls.getXVNeighbor();
+        XVNeighborSize = XVNeighbor->GetSize();
+
+        /* Check if the XWVertex belongs to L set or R set */
+        tbb::concurrent_unordered_set<int> *set_ptr;
+        if (tailIsLeft) set_ptr = XWVertex->GetLset();
+        else set_ptr = XWVertex->GetRset();
+
+        /* Create concurrent_hash_map by parallely inserting the node from XWVertex */
+        tbb::parallel_for_each(set_ptr->begin(), set_ptr->end(), [&](int node){
+            tbb::concurrent_hash_map<int, int>::accessor a;
+            std::pair<int, int> node_pair(node, 0);
+            XVNeighborNeighbor->insert(a, node_pair);
+        });        
         
-        if (tailIsLeft) XWVertex->insert_L(vertex);
-        else XWVertex->insert_R(vertex);
-
-        /* if |(X U {v})| + |ntail(X)| >= ms */
-        if ((int)(XWVertex->GetSize() + ntail_set->GetSize()) >= ms) {
-            
-            /* Parallel find the 2-hop common neighbor set */
-            /* Still need to get the common neighbor of {X U {v}} */
-            new_ls.CalculateNeighbor(vertex, tailIsLeft);
-            XVNeighbor = new_ls.getXVNeighbor();
-            XVNeighborSize = XVNeighbor->GetSize();
-
-            /* Check if the XWVertex belongs to L set or R set */
-            tbb::concurrent_unordered_set<int> *set_ptr;
-            if (tailIsLeft) set_ptr = XWVertex->GetLset();
-            else set_ptr = XWVertex->GetRset();
-
-            /* Create concurrent_hash_map by parallely inserting the node from XWVertex */
-            tbb::parallel_for_each(set_ptr->begin(), set_ptr->end(), [&](int node){
-                tbb::concurrent_hash_map<int, int>::accessor a;
-                std::pair<int, int> node_pair(node, 0);
-                XVNeighborNeighbor->insert(a, node_pair);
-            });        
-            
 
 
-            /* Parallely iterate the key in XVNeighborNeighbor 
-            and update frequency of the value with the number of neighors. */
-            if (tailIsLeft) set_ptr = XVNeighbor->GetRset();
-            else set_ptr = XVNeighbor->GetLset();
-            tbb::parallel_for_each(set_ptr->begin(), set_ptr->end(), [&](int node){
-                tbb::concurrent_hash_map<int, int>::accessor a;
-                VertexSet *temp_neighbor = new_ls.getBiGraph()->GetNeighbor(node, !tailIsLeft);
+        /* Parallely iterate the key in XVNeighborNeighbor 
+        and update frequency of the value with the number of neighors. */
+        if (tailIsLeft) set_ptr = XVNeighbor->GetRset();
+        else set_ptr = XVNeighbor->GetLset();
+        tbb::parallel_for_each(set_ptr->begin(), set_ptr->end(), [&](int node){
+            tbb::concurrent_hash_map<int, int>::accessor a;
+            VertexSet *temp_neighbor = new_ls.getBiGraph()->GetNeighbor(node, !tailIsLeft);
 
-                if (tailIsLeft) {
-                    for (auto it = temp_neighbor->GetLset()->begin(); it != temp_neighbor->GetLset()->end(); it++) {
-                        if (XVNeighborNeighbor->find(a, (int)*it)) {
-                            a->second++;
-                        } else {
-                            std::pair<int, int> node_pair(*it, 1);
-                            XVNeighborNeighbor->insert(a, node_pair);
-                        }
-                    }
-                } else {
-                    for (auto it = temp_neighbor->GetRset()->begin(); it != temp_neighbor->GetRset()->end(); it++) {
-                        if (XVNeighborNeighbor->find(a, (int)*it)) {
-                            a->second++;
-                        } else {
-                            std::pair<int, int> node_pair(*it, 1);
-                            XVNeighborNeighbor->insert(a, node_pair);
-                        }
+            if (tailIsLeft) {
+                for (auto it = temp_neighbor->GetLset()->begin(); it != temp_neighbor->GetLset()->end(); it++) {
+                    if (XVNeighborNeighbor->find(a, (int)*it)) {
+                        a->second++;
+                    } else {
+                        std::pair<int, int> node_pair(*it, 1);
+                        XVNeighborNeighbor->insert(a, node_pair);
                     }
                 }
-            });
-
-            /* Generating Y by find the key(vertex ID) whose value is equal to XVNeighborSize */
-            VertexSet *Y = new VertexSet();
-            if (XVNeighborSize > 0) {
-                tbb::parallel_for_each(XVNeighborNeighbor->begin(), XVNeighborNeighbor->end(),
-                    [&](const std::pair<int, int>& p) {
-                        if (p.second == XVNeighborSize) {
-                            /* Use spin lock to ensure the consistency */
-                            tbb::spin_mutex::scoped_lock lock(insert_mbe_lock);
-                            if (tailIsLeft) {
-                                Y->insert_L(p.first);
-                            } else {
-                                Y->insert_R(p.first);
-                            }
-                        }
-                    });
-            }
-
-
-            /* if Y \ (X U {v}) contains(<=) ntail(X) */
-            VertexSet temp_Y; /* Y \ (X U {v}) */
-            temp_Y.deep_copy(Y);
-            temp_Y -= *XWVertex;
-
-
-            #ifdef DEBUG
-            /* Print the XWVertex */
-            cout << "XWVertex: ------------------------------------------" << endl;
-            XWVertex->PrintStatus();
-            /* Print the XVNeighborNeighbor size and all the elements */
-            cout << vertex << ": XVNeighborNeighbor: " << "XVNeighborSize = " << XVNeighborSize << endl;
-            for (auto it = XVNeighborNeighbor->begin(); it != XVNeighborNeighbor->end(); it++) {
-                cout << it->first << ": " << it->second << endl;
-            }
-            /* Print XVNeighbor */
-            cout << "XVNeighbor: " << endl;
-            XVNeighbor->PrintStatus();
-            /* Print the status of Y */
-            cout << "Y: " << endl;
-            Y->PrintStatus();
-            cout << "temp_Y: " << endl;
-            temp_Y.PrintStatus();
-            /* Print ntail_set */
-            cout << "ntail_set: " << endl;
-            ntail_set->PrintStatus();
-            #endif /* DEBUG */
-
-
-
-            if (temp_Y <= *(ntail_set)) {
-                if ((int)(Y->GetSize()) >= ms) {
-                    /* Generating new biclique set and inserting to BiGraph with concurrent_hash_map. */
-                    // VertexSet *newMBE = new VertexSet();
-                    if (Y->GetSize() > 0) {
-                        VertexSet *newMBE = new VertexSet();
-                        newMBE->deep_copy(Y);
-                        *newMBE += *(new_ls.getXVNeighbor());
-                        /* Use spin lock for ensure mbe insertion and number count */
-                        #ifdef DEBUG
-                        cout << "MBE Found!!!: " << endl;
-                        newMBE->PrintStatus();
-                        #endif /* DEBUG */
-                        tbb::spin_mutex::scoped_lock lock(insert_final_lock);
-                        new_ls.getBiGraph()->InsertToFinal(newMBE);
-                        num_mbe++;
+            } else {
+                for (auto it = temp_neighbor->GetRset()->begin(); it != temp_neighbor->GetRset()->end(); it++) {
+                    if (XVNeighborNeighbor->find(a, (int)*it)) {
+                        a->second++;
+                    } else {
+                        std::pair<int, int> node_pair(*it, 1);
+                        XVNeighborNeighbor->insert(a, node_pair);
                     }
                 }
+            }
+        });
 
-                VertexSet newTail = *(ntail_set) - *(Y);
-                VertexSet *newX = new VertexSet();
-                *newX = *(Y);
+        /* Generating Y by find the key(vertex ID) whose value is equal to XVNeighborSize */
+        VertexSet *Y = new VertexSet();
+        if (XVNeighborSize > 0) {
+            tbb::parallel_for_each(XVNeighborNeighbor->begin(), XVNeighborNeighbor->end(),
+                [&](const std::pair<int, int>& p) {
+                    if (p.second == XVNeighborSize) {
+                        /* Use spin lock to ensure the consistency */
+                        tbb::spin_mutex::scoped_lock lock(insert_mbe_lock);
+                        if (tailIsLeft) {
+                            Y->insert_L(p.first);
+                        } else {
+                            Y->insert_R(p.first);
+                        }
+                    }
+                });
+        }
 
-                parlmbc(new_ls.getBiGraph(), newX, new_ls.getXVNeighbor(), &newTail, ms);
-            } /* if Y \ (X U {v}) contains(<=) tail(X) */
-        } /* if |(X U {v})| + |tail(X)| >= ms */
 
-        /* Reset the hash_map for next iteration. */
-        XVNeighborNeighbor->clear();
-
+        /* if Y \ (X U {v}) contains(<=) ntail(X) */
+        VertexSet temp_Y; /* Y \ (X U {v}) */
+        temp_Y.deep_copy(Y);
+        temp_Y -= *XWVertex;
 
 
-    } /* For each elements in ntail */
+        #ifdef DEBUG
+        /* Print the XWVertex */
+        cout << "XWVertex: ------------------------------------------" << endl;
+        XWVertex->PrintStatus();
+        /* Print the XVNeighborNeighbor size and all the elements */
+        cout << vertex << ": XVNeighborNeighbor: " << "XVNeighborSize = " << XVNeighborSize << endl;
+        for (auto it = XVNeighborNeighbor->begin(); it != XVNeighborNeighbor->end(); it++) {
+            cout << it->first << ": " << it->second << endl;
+        }
+        /* Print XVNeighbor */
+        cout << "XVNeighbor: " << endl;
+        XVNeighbor->PrintStatus();
+        /* Print the status of Y */
+        cout << "Y: " << endl;
+        Y->PrintStatus();
+        cout << "temp_Y: " << endl;
+        temp_Y.PrintStatus();
+        /* Print ntail_set */
+        cout << "ntail_set: " << endl;
+        ntail_set->PrintStatus();
+        #endif /* DEBUG */
+
+
+
+        if (temp_Y <= *(ntail_set)) {
+            if ((int)(Y->GetSize()) >= ms) {
+                /* Generating new biclique set and inserting to BiGraph with concurrent_hash_map. */
+                // VertexSet *newMBE = new VertexSet();
+                if (Y->GetSize() > 0) {
+                    VertexSet *newMBE = new VertexSet();
+                    newMBE->deep_copy(Y);
+                    *newMBE += *(new_ls.getXVNeighbor());
+                    /* Use spin lock for ensure mbe insertion and number count */
+                    #ifdef DEBUG
+                    cout << "MBE Found!!!: " << endl;
+                    newMBE->PrintStatus();
+                    #endif /* DEBUG */
+                    tbb::spin_mutex::scoped_lock lock(insert_final_lock);
+                    new_ls.getBiGraph()->InsertToFinal(newMBE);
+                }
+            }
+
+            VertexSet newTail = *(ntail_set) - *(Y);
+            VertexSet *newX = new VertexSet();
+            *newX = *(Y);
+
+            parlmbc(new_ls.getBiGraph(), newX, new_ls.getXVNeighbor(), &newTail, ms);
+        } /* if Y \ (X U {v}) contains(<=) tail(X) */
+    } /* if |(X U {v})| + |tail(X)| >= ms */
+
+    /* Reset the hash_map for next iteration. */
+    XVNeighborNeighbor->clear();
+
 }
 
 
@@ -287,14 +272,8 @@ parlmbc(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int ms)
         });
     }
 
-    /* Seperate the tails in in tail_vector to each thread equally. */
-    tail_size = tail_vector->size();
-    int stride = tail_size / num_thread;
-    if (stride == 0) stride = 1;
-    int effective_size = (tail_size + stride - 1) / stride;
-
-    tbb::parallel_for(0, effective_size, 1, [&](int i){
-        unroll_iterative_recursive(tail_vector, i * stride, stride, &ls);
+    tbb::parallel_for(0, tail_size, 1, [&](int i){
+        unroll_iterative_recursive(tail_vector, i, &ls);
     });
 
 }

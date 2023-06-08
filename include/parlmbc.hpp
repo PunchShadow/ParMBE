@@ -14,7 +14,7 @@
 /* Functions */
 void remove_tail(BiGraph *BPG, VertexSet* X, VertexSet* new_tail, int node, int ms);
 
-void unroll_iterative_recursive(tbb::concurrent_vector<int> *vec, int start, int stride, LocalState* ls);
+void unroll_iterative_recursive(tbb::concurrent_vector<int> *vec, int num_iter, LocalState* ls);
 
 /* Function Declaration */
 void parlmbc(BiGraph *BPG, VertexSet *X, VertexSet *tau, VertexSet *tail, int ms);
