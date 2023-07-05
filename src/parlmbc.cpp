@@ -220,7 +220,7 @@ void parlmbc(X_set X, L_set Gamma, R_set tail, int ms)
                             // cout << "MBE is found!!!! " << endl;
                             insert_final_lock.lock();
                             mbe_num++;
-                            /* Print MBE */
+                            // /* Print MBE */
                             // cout << "************ << MBE: " << mbe_num << " >>**********" << endl;
                             // print_set(Y);
                             // print_set(XVNeighbor);

@@ -29,7 +29,7 @@ int getKthNeighbor(const CSR_t& csr, int node, int start, int end, int k);
 
 void edgeListToCSR(const std::string &filename, CSR_t &csr, CSR_t &csr_reverse);
 
-X_set findCommonNeighbor(const CSR_t& csr, const X_set X);
+X_set findCommonNeighbor(const CSR_t& csr, const X_set& X);
 
 void swapCSR(CSR_t& csr1, CSR_t& csr2);
 

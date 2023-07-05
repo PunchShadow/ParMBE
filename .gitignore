@@ -1,0 +1,5 @@
+*.gz
+*.o
+*/*.o
+input/
+.vscode/

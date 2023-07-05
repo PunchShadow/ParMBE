@@ -24,16 +24,16 @@ SRC = $(wildcard $(SRCDIR)/*.cpp)
 OBJ = $(SRC:.cpp=.o)
 
 
-TARGET = CSR_main
+TARGET = parmbe_main
 
-$(TARGET): $(OBJ) CSR_test.o
+$(TARGET): $(OBJ) parmbe_test.o
 	$(CC) $(CFLAGS) -o $@ $^ -ltbb
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-minelmbc_test.o: CSR_test.cpp
-	$(CC) $(CFLAGS) -c CSR_test.cpp
+minelmbc_test.o: parmbe_test.cpp
+	$(CC) $(CFLAGS) -c parmbe_test.cpp
 
 # minelmbc.o: $(LIBDIR)/minelmbc.cpp
 # 	$(CC) -c $(LIBDIR)/minelmbc.cpp -ltbb

@@ -53,30 +53,32 @@ getKthNeighbor(const CSR_t& csr, int node, int start, int end, int k) {
     return csr.col_idx[start + k];
 }
 
-X_set
-findCommonNeighbor(const CSR_t& csr, const X_set X)
+/* FIXME: Wrong commone neighbor approach */
+X_set 
+findCommonNeighbor(const CSR_t& csr_f, const X_set& X)
 {
-    X_set temp_x, temp_x2, result;
-    bool first_ele = true;
-    for (int ele : X) {
-        int start, end;
-        searchNeighbor(csr, ele, start, end);
-        
-        if (first_ele) {
-            for (int i = start; i < end; i++) {
-                int neighbor = csr.col_idx[i];
-                result.insert(neighbor);
-            }
-        } else {
-            for (int i = start; i < end; i++) {
-                temp_x.insert(csr.col_idx[i]);
-            }
-            result = set_intersection(result, temp_x);
-        }
+    X_set result;
 
+    if (X.empty()) {
+        return result; // If X is empty, return an empty set
     }
+
+    // Initialize result with the neighbors of the first node in X
+    int start, end;
+    searchNeighbor(csr_f, *X.begin(), start, end);
+    result.insert(csr_f.col_idx.begin() + start, csr_f.col_idx.begin() + end);
+
+    // For each other node in X, intersect result with the node's neighbors
+    for (auto it = std::next(X.begin()); it != X.end(); ++it) {
+        X_set temp_x;
+        searchNeighbor(csr_f, *it, start, end);
+        temp_x.insert(csr_f.col_idx.begin() + start, csr_f.col_idx.begin() + end);
+        result = set_intersection(result, temp_x);
+    }
+
     return result;
 }
+
 
 
 

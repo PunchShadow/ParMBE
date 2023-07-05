@@ -48,6 +48,23 @@ set_copy(X_set& dst, const X_set& src)
     }
 }
 
+inline bool
+set_equal(const X_set& set1, const X_set& set2)
+{
+    if (set1.size() != set2.size()) {
+        return false;
+    }
+
+    for (const auto& ele : set1) {
+        if (set2.find(ele) == set2.end()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 
 inline X_set
 set_union(const X_set& set1, const X_set& set2)
