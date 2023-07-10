@@ -1,8 +1,8 @@
 CC = g++
 
-LIBDIR = /home/sylab/PunchShadow/ParMBE/include
+LIBDIR = ../../include
 TBBLIBDIR = /usr/include/tbb/
-SRCDIR = /home/sylab/PunchShadow/ParMBE/src
+SRCDIR = ../../src
 LIB = -I$(LIBDIR) -I$(TBBLIBDIR)
 
 
