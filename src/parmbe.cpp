@@ -55,6 +55,11 @@ parmbe_main(string file_name)
     struct timeval start, end;
     gettimeofday(&start, NULL);
 
+    /* Use tbb::global control */
+
+
+
+    
     tbb::task_group tg0;
     tg0.run([&] {
         /* Start MBE */
@@ -108,6 +113,7 @@ parmbe_main(string file_name)
                                         
                                         tail_local.insert(y);
                                     }
+                                    // tail_local.insert(y);
                                 });
                             // cout << endl;
                         });
@@ -136,8 +142,9 @@ parmbe_main(string file_name)
                     
                     insert_final_lock.unlock();
                 }
-
+                {
                 parlmbc(X_local, Gamma_local, tail_local, ms);
+                }
             });
     });
     tg0.wait();

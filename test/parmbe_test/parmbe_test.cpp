@@ -12,6 +12,13 @@ int main(int argc, char *argv[])
         return 0;
     } 
 
+    if (argc == 2) {
+        cout << "Use default thread number: " << num_thread << endl;
+    } else if (argc == 3) {
+        cout << "Use thread number: " << argv[2] << endl;
+        num_thread = atoi(argv[2]);
+    }
+
     const string file_path = argv[1];
 
     parmbe_main(file_path);

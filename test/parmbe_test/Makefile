@@ -6,13 +6,13 @@ SRCDIR = ../../src
 LIB = -I$(LIBDIR) -I$(TBBLIBDIR)
 
 
-CFLAGS = -Wall -Werror -std=c++17
+CFLAGS = -Wall -std=c++17
 CFLAGS += $(LIB)
 CFLAGS += -ltbb
-CFLAGS += -g
-CFLAGS += -O0
+# CFLAGS += -g
+# CFLAGS += -O0
 # CFLAGS += -fsanitize=thread -fPIE -pie -g -fno-omit-frame-pointer
-# CFLAGS += -O3
+CFLAGS += -O3
 
 #############################################
 CFLAGS += -DNDEBUG

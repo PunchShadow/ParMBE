@@ -15,7 +15,7 @@ typedef struct CSR
 } CSR_t;
 
 
-inline int num_thread = 32; //tbb::task_scheduler_init::default_num_threads();
+inline int num_thread = tbb::task_scheduler_init::default_num_threads();
 
 inline CSR_t csr;
 inline CSR_t csr_reverse;
